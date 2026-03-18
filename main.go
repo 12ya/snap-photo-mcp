@@ -223,10 +223,10 @@ func registerBrandCorePic(s *server.MCPServer) {
 		mcp.WithDescription("Composite brand styling onto a real FocusHero app screenshot"),
 		mcp.WithString("picName", mcp.Required(), mcp.Description(`Filename in core_pics/ (e.g. "todos.PNG"). Pass "list" to see all.`)),
 		mcp.WithString("text", mcp.Description("Text to overlay on the image")),
-		mcp.WithString("caption", mcp.Description("Full TikTok caption saved as a .txt alongside the image")),
+		mcp.WithString("viralCaption", mcp.Description("Viral title + description saved once as caption.txt in the batch folder (shared across all images in the batch)")),
 		mcp.WithString("colorGrade", mcp.Description("Brand color tint: sky-blue, sage-green, soft-violet, warm-amber, muted-coral, lavender, teal, golden")),
 		mcp.WithNumber("gradeOpacity", mcp.Description("Color grade strength 0-1 (default 0.25)")),
-		mcp.WithString("outputPath", mcp.Description("Destination path")),
+		mcp.WithString("batchID", mcp.Description("Shared folder name suffix for a batch (e.g. \"launch-week\"). All calls with the same batchID land in the same folder. Defaults to current timestamp.")),
 	)
 
 	s.AddTool(tool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -264,17 +264,19 @@ func registerBrandCorePic(s *server.MCPServer) {
 		}
 
 		src := filepath.Join(corePicsDir, picName)
-		dest := req.GetString("outputPath", "")
-		if dest == "" {
-			baseName := regexp.MustCompile(`(\.[^.]+)$`).ReplaceAllString(picName, "_branded.png")
-			dest = filepath.Join(outputDir, "branded-"+time.Now().Format("20060102-1504"), baseName)
+		baseName := regexp.MustCompile(`(\.[^.]+)$`).ReplaceAllString(picName, "_branded.png")
+		batchID := req.GetString("batchID", "")
+		if batchID == "" {
+			batchID = time.Now().Format("20060102_1504")
 		}
-		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		folder := filepath.Join(outputDir, "branded_"+batchID)
+		dest := filepath.Join(folder, baseName)
+		if err := os.MkdirAll(folder, 0755); err != nil {
 			return nil, err
 		}
 
 		text := req.GetString("text", "")
-		caption := req.GetString("caption", "")
+		viralCaption := req.GetString("viralCaption", "")
 		colorGrade := req.GetString("colorGrade", "")
 		gradeOpacity := req.GetFloat("gradeOpacity", 0.25)
 
@@ -283,11 +285,11 @@ func registerBrandCorePic(s *server.MCPServer) {
 		}
 
 		var lines []string
-		lines = append(lines, fmt.Sprintf("Image   → %s", dest))
+		lines = append(lines, fmt.Sprintf("Image → %s", dest))
 
-		if caption != "" {
-			captionFile := regexp.MustCompile(`\.png$`).ReplaceAllString(dest, ".txt")
-			if err := os.WriteFile(captionFile, []byte(caption), 0644); err != nil {
+		if viralCaption != "" {
+			captionFile := filepath.Join(folder, "caption.txt")
+			if err := os.WriteFile(captionFile, []byte(viralCaption), 0644); err != nil {
 				return nil, err
 			}
 			lines = append(lines, fmt.Sprintf("Caption → %s", captionFile))
