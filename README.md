@@ -11,7 +11,7 @@ MCP server that generates TikTok photo carousels using the Gemini image API, app
 ## Setup
 
 ```bash
-git clone <repo>
+git clone https://github.com/12ya/social-media-mcp/
 cd social-media-mcp/go
 go build .
 ```

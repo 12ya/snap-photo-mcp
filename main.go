@@ -53,8 +53,8 @@ func main() {
 	registerAddTextOverlay(s)
 	registerGenerateSingleImage(s)
 	registerBrandCorePic(s)
-	registerTikTokExchangeCode(s)
-	registerPostToTikTok(s)
+	// registerTikTokExchangeCode(s)
+	// registerPostToTikTok(s)
 
 	if err := server.ServeStdio(s); err != nil {
 		log.Fatalf("MCP server error: %v", err)
@@ -68,7 +68,6 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 		mcp.WithDescription("Generate a 6-slide TikTok photo carousel"),
 		mcp.WithString("sessionId", mcp.Required(), mcp.Description("Unique slug, e.g. 'coding-morning-0317'")),
 		mcp.WithString("hookText", mcp.Required(), mcp.Description("Bold hook overlaid on slide 1")),
-		mcp.WithString("lockedArchitecture", mcp.Required(), mcp.Description("Fixed scene description pasted into every prompt")),
 		mcp.WithString("title", mcp.Description("Viral TikTok title for the post")),
 		mcp.WithString("caption", mcp.Description("Full TikTok caption including hashtags")),
 	)
@@ -87,10 +86,6 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 			return nil, err
 		}
 		hookText, err := req.RequireString("hookText")
-		if err != nil {
-			return nil, err
-		}
-		lockedArch, err := req.RequireString("lockedArchitecture")
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +111,7 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 			wg.Add(1)
 			go func(i int, style string) {
 				defer wg.Done()
-				prompt := buildPrompt(lockedArch, style)
+				prompt := buildPrompt(style)
 				var hookPtr *string
 				if i == 0 {
 					hookPtr = &hookText
@@ -295,9 +290,9 @@ func registerBrandCorePic(s *server.MCPServer) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-func buildPrompt(architecture, style string) string {
-	return fmt.Sprintf("iPhone photo. %s %s Portrait orientation. Realistic lighting, natural phone camera quality.",
-		strings.TrimSpace(architecture), strings.TrimSpace(style))
+func buildPrompt(style string) string {
+	return fmt.Sprintf("iPhone photo. %s Portrait orientation. Realistic lighting, natural phone camera quality.",
+		strings.TrimSpace(style))
 }
 
 func getEnv(key, fallback string) string {
