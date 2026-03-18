@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "tiktok-image-gen": {
+            "command": "./social-media-mcp",
+            "env": {
+                "GEMINI_API_KEY": "Gemini KEY",
+                "IMAGE_OUTPUT_DIR": "/Users/YOU/Downloads"
+            }
+        }
+    }
+}
