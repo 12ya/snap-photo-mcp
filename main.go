@@ -120,13 +120,22 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 			}(i, style)
 		}
 		wg.Wait()
+
+		failures := map[string]string{}
 		for i, err := range errs {
 			if err != nil {
-				return nil, fmt.Errorf("slide %d: %w", i+1, err)
+				failures[fmt.Sprintf("slide_%d", i+1)] = err.Error()
 			}
 		}
 
-		out := map[string]any{"success": true, "sessionId": sessionId, "files": results}
+		out := map[string]any{
+			"success":   len(failures) == 0,
+			"sessionId": sessionId,
+			"files":     results,
+		}
+		if len(failures) > 0 {
+			out["failures"] = failures
+		}
 		if title != "" || caption != "" {
 			lines := strings.Join(filterEmpty([]string{title, caption}), "\n\n")
 			captionFile := filepath.Join(sessionDir, "caption.txt")
