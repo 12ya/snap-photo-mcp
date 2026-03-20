@@ -243,7 +243,7 @@ func pollPublishStatus(token, publishID string) (map[string]any, error) {
 	const maxAttempts = 6
 	const interval = 10 * time.Second
 
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+	for range maxAttempts {
 		time.Sleep(interval)
 
 		body, _ := json.Marshal(map[string]string{"publish_id": publishID})
@@ -308,11 +308,4 @@ func setEnvVar(key, value string) {
 		content += line + "\n"
 	}
 	os.WriteFile(envPath, []byte(content), 0644)
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
