@@ -21,8 +21,8 @@ import (
 // ─── Gemini image generation ──────────────────────────────────────────────────
 
 type geminiRequest struct {
-	Contents         []geminiContent  `json:"contents"`
-	GenerationConfig geminiGenConfig  `json:"generationConfig"`
+	Contents         []geminiContent `json:"contents"`
+	GenerationConfig geminiGenConfig `json:"generationConfig"`
 }
 
 type geminiContent struct {
@@ -222,33 +222,35 @@ func applyBrandedOverlay(srcPath, destPath, text, colorGrade string, gradeOpacit
 	dc := gg.NewContext(int(W), int(H))
 	dc.DrawImage(working, 0, 0)
 
-	// Snapchat-style caption band
+	// Snapchat-style caption band — font is fixed, band grows to fit text
 	if text != "" {
-		bandH := H * 0.05
-		bandY := H/2 - bandH/2
-
-		// Shrink font to fit in one line
-		fontSize := bandH * 0.65
+		fontSize := H * 0.05 * 0.65 // same starting size as before
+		if fontSize < 12 {
+			fontSize = 12
+		}
 		if err := loadBoldFont(dc, fontSize); err != nil {
 			return err
 		}
-		for {
-			w, _ := dc.MeasureString(text)
-			if w <= W*0.9 || fontSize <= 10 {
-				break
-			}
-			fontSize -= 1
-			_ = loadBoldFont(dc, fontSize)
-		}
+
+		// Wrap text so no line exceeds 90% of width
+		lines := dc.WordWrap(text, W*0.9)
+		lineH := fontSize * 1.3
+		bandH := lineH*float64(len(lines)) + fontSize*0.6 // padding top+bottom
+		bandY := H/2 - bandH/2
 
 		// Band background
 		dc.SetRGBA(0, 0, 0, 0.72)
 		dc.DrawRectangle(0, bandY, W, bandH)
 		dc.Fill()
 
-		// Centered text in band
+		// Draw each line centered in the band
 		dc.SetHexColor("#FFFFFF")
-		dc.DrawStringAnchored(text, W/2, bandY+bandH/2, 0.5, 0.5)
+		for i, line := range lines {
+			// ay=0: gg draws from the baseline directly; place baseline at 75% of slot
+			// height so the visual glyph center lands at the slot midpoint
+			y := bandY + fontSize*0.3 + float64(i)*lineH + lineH*0.75
+			dc.DrawStringAnchored(line, W/2, y, 0.5, 0)
+		}
 	}
 
 	outF, err := os.Create(destPath)
