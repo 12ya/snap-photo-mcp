@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -251,7 +252,7 @@ func registerBrandCorePic(s *server.MCPServer) {
 			}
 		}
 
-		if picName == "list" || !contains(available, picName) {
+		if picName == "list" || !slices.Contains(available, picName) {
 			if len(available) == 0 {
 				return mcp.NewToolResultText("No image files found in core_pics/"), nil
 			}
@@ -331,13 +332,4 @@ func filterEmpty(ss []string) []string {
 		}
 	}
 	return out
-}
-
-func contains(ss []string, s string) bool {
-	for _, v := range ss {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
