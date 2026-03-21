@@ -63,8 +63,7 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 		errs := make([]error, 6)
 		var wg sync.WaitGroup
 		for i, style := range styleVariants {
-			wg.Add(1)
-			go func(i int, style string) {
+			wg.Go(func() {
 				defer wg.Done()
 				prompt := buildPrompt(style)
 				var hookPtr *string
@@ -72,7 +71,7 @@ func registerGenerateSlideshow(s *server.MCPServer) {
 					hookPtr = &hookText
 				}
 				results[i], errs[i] = generateSingle(prompt, hookPtr, sessionDir, i+1, "")
-			}(i, style)
+			})
 		}
 		wg.Wait()
 
