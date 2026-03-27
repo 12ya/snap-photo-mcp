@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -43,6 +44,16 @@ func main() {
 	registerGenerateInstagramCarousel(s)
 	// registerTikTokExchangeCode(s)
 	// registerPostToTikTok(s)
+
+	// Serve outputs on localhost:8080
+	go func() {
+		fs := http.FileServer(http.Dir(outputDir))
+		http.Handle("/", fs)
+		log.Println("Preview server running on http://localhost:8080")
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Printf("HTTP server error: %v", err)
+		}
+	}()
 
 	if err := server.ServeStdio(s); err != nil {
 		log.Fatalf("MCP server error: %v", err)
