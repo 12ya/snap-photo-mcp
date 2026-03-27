@@ -40,6 +40,7 @@ func main() {
 	registerAddTextOverlay(s)
 	registerGenerateSingleImage(s)
 	registerBrandCorePic(s)
+	registerGenerateInstagramCarousel(s)
 	// registerTikTokExchangeCode(s)
 	// registerPostToTikTok(s)
 

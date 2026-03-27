@@ -1,3 +1,5 @@
 .mcp.json
 CLAUDE.md
 /core_pics
+.env
+.DS_Store
