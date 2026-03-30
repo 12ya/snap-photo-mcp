@@ -220,7 +220,18 @@ func applyBrandedOverlay(srcPath, destPath, text, colorGrade string, gradeOpacit
 	H := float64(bounds.Dy())
 
 	dc := gg.NewContext(int(W), int(H))
-	dc.DrawImage(working, 0, 0)
+
+	// Dark background so the full iPhone frame is visible with padding
+	dc.SetHexColor("#0E0E10")
+	dc.Clear()
+
+	// Scale down the screenshot and center it so the whole phone is visible
+	const phoneScale = 0.85
+	dc.Push()
+	dc.Translate(W/2, H/2)
+	dc.Scale(phoneScale, phoneScale)
+	dc.DrawImageAnchored(working, 0, 0, 0.5, 0.5)
+	dc.Pop()
 
 	// Snapchat-style caption band — font is fixed, band grows to fit text
 	if text != "" {
