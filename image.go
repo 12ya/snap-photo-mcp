@@ -207,10 +207,12 @@ func applyBrandedOverlay(srcPath, destPath, text, colorGrade string, gradeOpacit
 		return fmt.Errorf("decode image: %w", err)
 	}
 
-	// Apply multiply blend if colorGrade is set
+	// Resolve brand color early — used for both multiply blend and background glow
 	var working image.Image = src
+	var brandHex string
 	if colorGrade != "" {
 		if hex, ok := brandGrades[colorGrade]; ok {
+			brandHex = hex
 			working = multiplyBlend(working, hex, gradeOpacity)
 		}
 	}
@@ -221,9 +223,24 @@ func applyBrandedOverlay(srcPath, destPath, text, colorGrade string, gradeOpacit
 
 	dc := gg.NewContext(int(W), int(H))
 
-	// Dark background so the full iPhone frame is visible with padding
-	dc.SetHexColor("#0E0E10")
-	dc.Clear()
+	// Radial gradient background — brand color glow at center fading to near-black
+	if brandHex != "" {
+		bc := hexToRGBA(brandHex)
+		grad := gg.NewRadialGradient(W/2, H/2, 0, W/2, H/2, H*0.65)
+		grad.AddColorStop(0, color.RGBA{
+			R: uint8(float64(bc.R) * 0.22),
+			G: uint8(float64(bc.G) * 0.22),
+			B: uint8(float64(bc.B) * 0.22),
+			A: 255,
+		})
+		grad.AddColorStop(1, color.RGBA{14, 14, 16, 255})
+		dc.SetFillStyle(grad)
+		dc.DrawRectangle(0, 0, W, H)
+		dc.Fill()
+	} else {
+		dc.SetHexColor("#0E0E10")
+		dc.Clear()
+	}
 
 	// Scale down the screenshot and center it so the whole phone is visible
 	const phoneScale = 0.85
