@@ -243,7 +243,7 @@ func applyBrandedOverlay(srcPath, destPath, text, colorGrade string, gradeOpacit
 	}
 
 	// Scale down the screenshot and center it so the whole phone is visible
-	const phoneScale = 0.75
+	const phoneScale = 0.55
 	dc.Push()
 	dc.Translate(W/2, H/2)
 	dc.Scale(phoneScale, phoneScale)
