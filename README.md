@@ -94,6 +94,17 @@ gradeOpacity number? Color grade strength 0–1 (default 0.25)
 outputPath   string? Destination path
 ```
 
+### `generate_brand_story_pics`
+Generates a 6-slide branded FocusHero screenshot carousel where every slide is one beat in a continuous story.
+
+```
+storyTexts   string[] Exactly 6 short story beats, one per slide
+picNames     string[] Optional 6 filenames from core_pics/; defaults to a balanced app journey
+sessionId    string?  Shared folder suffix, e.g. "coding-story-0317"
+viralCaption string?  Full TikTok caption, saved as caption.txt
+gradeOpacity number?  Color grade strength 0-1 (default 0.25)
+```
+
 ### `tiktok_exchange_code`
 One-time OAuth setup. Exchanges a TikTok authorization code for access + refresh tokens and writes them to `.env`.
 
@@ -137,6 +148,22 @@ These are prompts you give Claude (with the MCP server connected) — not shell 
 > "Generate 6 core brand images"
 
 Claude will call `brand_core_pic` for each of the 6 app screenshots in `core_pics/`, applying the correct slide color per the FocusHero palette (sky-blue → sage-green → soft-violet → warm-amber → muted-coral), with value text on each slide. All images land in a single timestamped folder, e.g. `~/Downloads/branded-20260318-1402/`.
+
+---
+
+### Generate 6 brand screenshots with a continuous story
+
+> "Generate 6 core brand pics with a short continuous story about learning piano after work"
+
+Claude will call `generate_brand_story_pics` once with 6 connected story beats. The default screenshot order follows an app journey: active timer → todos → habits → analytics → hero card → level path. All images land in one folder, e.g. `~/Downloads/brand_story_piano-after-work-0318/`.
+
+Example story beats:
+- "I said I had no time for piano after work."
+- "So I made the goal small enough to actually start."
+- "One focused session became a streak."
+- "Then the missing hours finally had a shape."
+- "My progress stopped feeling invisible."
+- "Now practice feels like leveling up."
 
 ---
 

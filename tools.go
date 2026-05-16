@@ -252,3 +252,140 @@ func registerBrandCorePic(s *server.MCPServer) {
 		return mcp.NewToolResultText(strings.Join(lines, "\n")), nil
 	})
 }
+
+// ─── Tool 5: generate_brand_story_pics ────────────────────────────────────────
+
+func registerGenerateBrandStoryPics(s *server.MCPServer) {
+	tool := mcp.NewTool("generate_brand_story_pics",
+		mcp.WithDescription("Generate a 6-image FocusHero brand screenshot carousel with one continuous story across all slides"),
+		mcp.WithString("sessionId", mcp.Description("Shared folder name suffix, e.g. 'coding-story-0317'. Defaults to current timestamp.")),
+		mcp.WithString("viralCaption", mcp.Description("Viral title + description saved as caption.txt in the batch folder")),
+		mcp.WithNumber("gradeOpacity", mcp.Description("Color grade strength 0-1 (default 0.25)")),
+	)
+	tool.InputSchema.Properties["storyTexts"] = map[string]any{
+		"type":        "array",
+		"description": "Exactly 6 short story beats. Each beat is overlaid on the matching slide and should read as one continuous story.",
+		"items":       map[string]any{"type": "string"},
+		"minItems":    6,
+		"maxItems":    6,
+	}
+	tool.InputSchema.Properties["picNames"] = map[string]any{
+		"type":        "array",
+		"description": "Optional 6 filenames from core_pics/. Defaults to a balanced FocusHero app journey.",
+		"items":       map[string]any{"type": "string"},
+		"minItems":    6,
+		"maxItems":    6,
+	}
+	tool.InputSchema.Required = append(tool.InputSchema.Required, "storyTexts")
+
+	s.AddTool(tool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		storyTexts, err := req.RequireStringSlice("storyTexts")
+		if err != nil {
+			return nil, err
+		}
+		if len(storyTexts) != 6 {
+			return nil, fmt.Errorf("storyTexts must have exactly 6 items")
+		}
+
+		picNames, err := req.RequireStringSlice("picNames")
+		if err != nil || len(picNames) == 0 {
+			picNames = defaultStoryPicNames()
+		}
+		if len(picNames) != 6 {
+			return nil, fmt.Errorf("picNames must have exactly 6 items when provided")
+		}
+
+		available, err := availableCorePics()
+		if err != nil {
+			return nil, err
+		}
+		for _, picName := range picNames {
+			if !slices.Contains(available, picName) {
+				return nil, fmt.Errorf("picName %q not found in core_pics/. Available: %s", picName, strings.Join(available, ", "))
+			}
+		}
+
+		sessionId := req.GetString("sessionId", "")
+		if sessionId == "" {
+			sessionId = time.Now().Format("20060102_1504")
+		}
+		folder := filepath.Join(outputDir, "brand_story_"+sessionId)
+		if err := os.MkdirAll(folder, 0755); err != nil {
+			return nil, err
+		}
+
+		gradeOpacity := req.GetFloat("gradeOpacity", 0.25)
+		colorGrades := []string{"sky-blue", "sage-green", "soft-violet", "warm-amber", "muted-coral", "teal"}
+		files := make([]string, 6)
+
+		for i, picName := range picNames {
+			src := filepath.Join(corePicsDir, picName)
+			dest := filepath.Join(folder, fmt.Sprintf("slide_%d_%s", i+1, storySafeName(picName)))
+			if err := applyBrandedOverlay(src, dest, storyTexts[i], colorGrades[i], gradeOpacity); err != nil {
+				return nil, err
+			}
+			files[i] = dest
+		}
+
+		out := map[string]any{
+			"success":    true,
+			"sessionId":  sessionId,
+			"folder":     folder,
+			"files":      files,
+			"storyTexts": storyTexts,
+			"picNames":   picNames,
+		}
+
+		if viralCaption := req.GetString("viralCaption", ""); viralCaption != "" {
+			captionFile := filepath.Join(folder, "caption.txt")
+			if err := os.WriteFile(captionFile, []byte(viralCaption), 0644); err != nil {
+				return nil, err
+			}
+			out["captionFile"] = captionFile
+		}
+
+		b, _ := json.MarshalIndent(out, "", "  ")
+		return mcp.NewToolResultText(string(b)), nil
+	})
+}
+
+func availableCorePics() ([]string, error) {
+	entries, err := os.ReadDir(corePicsDir)
+	if err != nil {
+		return nil, fmt.Errorf("core_pics dir not found: %w", err)
+	}
+
+	var available []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			name := e.Name()
+			lower := strings.ToLower(name)
+			if strings.HasSuffix(lower, ".png") || strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg") {
+				available = append(available, name)
+			}
+		}
+	}
+	return available, nil
+}
+
+func defaultStoryPicNames() []string {
+	return []string{
+		"Main (started) dark.png",
+		"Todos.png",
+		"Habit Tracker.png",
+		"Analytics - building (dark).png",
+		"Hero journey Card (dark).png",
+		"Hero journey Levels (dark).png",
+	}
+}
+
+func storySafeName(picName string) string {
+	base := regexp.MustCompile(`\.[^.]+$`).ReplaceAllString(picName, "")
+	base = strings.ToLower(base)
+	base = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(base, "_")
+	base = strings.Trim(base, "_")
+	if base == "" {
+		return "brand_story.png"
+	}
+	return base + ".png"
+}
